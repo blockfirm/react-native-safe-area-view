@@ -8,6 +8,8 @@ import {
   Animated,
 } from 'react-native';
 import hoistStatics from 'hoist-non-react-statics';
+import { getStatusBarHeight as _getStatusBarHeight } from 'react-native-status-bar-height';
+import { isIphoneX } from 'react-native-iphone-x-helper';
 
 import withOrientation from './withOrientation';
 
@@ -34,18 +36,6 @@ const { height: D_HEIGHT, width: D_WIDTH } = getResolvedDimensions();
 const { PlatformConstants = {} } = NativeModules;
 const { minor = 0 } = PlatformConstants.reactNativeVersion || {};
 
-const isIPhoneX = (() => {
-  if (Platform.OS === 'web') return false;
-
-  return (
-    (Platform.OS === 'ios' &&
-      ((D_HEIGHT === X_HEIGHT && D_WIDTH === X_WIDTH) ||
-        (D_HEIGHT === X_WIDTH && D_WIDTH === X_HEIGHT))) ||
-    ((D_HEIGHT === XSMAX_HEIGHT && D_WIDTH === XSMAX_WIDTH) ||
-      (D_HEIGHT === XSMAX_WIDTH && D_WIDTH === XSMAX_HEIGHT))
-  );
-})();
-
 const isNewIPadPro = (() => {
   if (Platform.OS !== 'ios') return false;
 
@@ -58,7 +48,7 @@ const isNewIPadPro = (() => {
 })();
 
 const isIPad = (() => {
-  if (Platform.OS !== 'ios' || isIPhoneX) return false;
+  if (Platform.OS !== 'ios' || isIphoneX()) return false;
 
   // if portrait and width is smaller than iPad width
   if (D_HEIGHT > D_WIDTH && D_WIDTH < PAD_WIDTH) {
@@ -80,33 +70,7 @@ const statusBarHeight = isLandscape => {
     return _customStatusBarHeight;
   }
 
-  /**
-   * This is a temporary workaround because we don't have a way to detect
-   * if the status bar is translucent or opaque. If opaque, we don't need to
-   * factor in the height here; if translucent (content renders under it) then
-   * we do.
-   */
-  if (Platform.OS === 'android') {
-    if (global.Expo) {
-      return global.Expo.Constants.statusBarHeight;
-    } else {
-      return 0;
-    }
-  }
-
-  if (isIPhoneX) {
-    return isLandscape ? 0 : 44;
-  }
-
-  if (isNewIPadPro) {
-    return 24;
-  }
-
-  if (isIPad) {
-    return _customStatusBarHidden ? 0 : 20;
-  }
-
-  return isLandscape || _customStatusBarHidden ? 0 : 20;
+  return _getStatusBarHeight();
 };
 
 const doubleFromPercentString = percent => {
@@ -350,14 +314,14 @@ export function getInset(key, isLandscape) {
     case 'horizontal':
     case 'right':
     case 'left': {
-      return isLandscape ? (isIPhoneX ? 44 : 0) : 0;
+      return isLandscape ? (isIphoneX() ? _getStatusBarHeight() : 0) : 0;
     }
     case 'vertical':
     case 'top': {
       return statusBarHeight(isLandscape);
     }
     case 'bottom': {
-      if (isIPhoneX) {
+      if (isIphoneX()) {
         return isLandscape ? 24 : 34;
       }
 
